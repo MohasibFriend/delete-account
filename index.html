@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حذف حساب كوجنيتو</title>
+</head>
+<body>
+
+    <h2>حذف حساب كوجنيتو</h2>
+    <p>تأكيد حذف الحساب</p>
+    
+    <div id="confirmation-container">
+        <label for="username">اسم المستخدم:</label>
+        <input type="text" id="username" placeholder="ادخل اسم المستخدم"><br><br>
+        <label for="password">كلمة المرور:</label>
+        <input type="password" id="password" placeholder="ادخل كلمة المرور"><br><br>
+        <button onclick="confirmDelete()">حذف الحساب</button>
+    </div>
+
+    <p id="message"></p>
+
+    <!-- تحميل مكتبات AWS SDK و Amazon Cognito Identity SDK -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.821.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/amazon-cognito-identity-js/4.5.8/amazon-cognito-identity.min.js"></script>
+
+    <script>
+        // تكوين AWS SDK
+        AWS.config.region = 'us-east-1'; // منطقة AWS الخاصة بك
+        AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+            IdentityPoolId: 'us-east-1:e2d46a27-bee6-43f3-ac9b-40801afc5c60' // Identity Pool ID
+        });
+
+        // Function to confirm delete
+        async function confirmDelete() {
+            const username = document.getElementById('username').value; // استرجاع اسم المستخدم من حقل الإدخال
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                document.getElementById('message').innerText = 'يرجى إدخال اسم المستخدم وكلمة المرور';
+                return;
+            }
+
+            // إعداد بيانات التوثيق
+            const authenticationData = {
+                Username: username,
+                Password: password,
+            };
+            const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
+
+            const poolData = {
+                UserPoolId: 'us-east-1_c8LLJ45op', // User Pool ID الخاص بك
+                ClientId: '6oefeov5mb34okbe1fgf5l6lbd' // Client ID الخاص بك
+            };
+            const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+            const userData = {
+                Username: username,
+                Pool: userPool
+            };
+            const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+            cognitoUser.authenticateUser(authenticationDetails, {
+                onSuccess: function () {
+                    // إذا نجحت المصادقة، قم بحذف المستخدم
+                    cognitoUser.deleteUser((err, result) => {
+                        if (err) {
+                            document.getElementById('message').innerText = 'حدث خطأ أثناء الحذف: ' + err.message;
+                        } else {
+                            document.getElementById('message').innerText = 'تم حذف الحساب بنجاح';
+                            // إعادة التوجيه إلى صفحة تسجيل الدخول
+                            setTimeout(() => {
+                                window.location.href = '/login.html';
+                            }, 2000);
+                        }
+                    });
+                },
+                onFailure: function (err) {
+                    document.getElementById('message').innerText = 'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى إعادة المحاولة';
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
